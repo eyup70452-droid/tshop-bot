@@ -1,0 +1,13 @@
+{
+  "name": "tshop-v4",
+  "version": "4.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "framer-motion": "^10.16.4"
+  },
+  "scripts": {
+    "build": "echo 'No build step needed for plain HTML/JS' && exit 0"
+  }
+}
