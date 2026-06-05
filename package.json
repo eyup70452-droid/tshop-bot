@@ -1,0 +1,8 @@
+{
+  "name": "tshop-sistemi",
+  "version": "4.0.0",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
