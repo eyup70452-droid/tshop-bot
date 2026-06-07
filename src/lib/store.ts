@@ -25,7 +25,7 @@ export const ROLE_HIERARCHY: Record<string, number> = {
   [ROLES.USER]: 1,
 };
 
-export const hasPermission = (userRole: string, requiredLevel: number) => {
+export const hasPermission = (userRole: string, requiredLevel: number): boolean => {
   return (ROLE_HIERARCHY[userRole] || 0) >= requiredLevel;
 };
 
@@ -36,7 +36,7 @@ export const VIP_LEVELS = {
   MAX: 'max',
 } as const;
 
-export const VIP_BENEFITS = {
+export const VIP_BENEFITS: Record<string, any> = {
   [VIP_LEVELS.STANDARD]: {
     name: "Standart VIP", icon: "⭐", frame: "frame-silver",
     wheelRewards: [10, 20, 50, 100, 150, 200, 250, 300],
@@ -118,25 +118,34 @@ export const BADGES_DEF = [
 // =============================================================================
 // YARDIMCI FONKSİYONLAR
 // =============================================================================
-export const generateId = () => {
+export const generateId = (): string => {
   try {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  } catch (e) {}
+  } catch (e) { /* fallback */ }
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 };
 
-// GÜVENLİ SANITIZE (Build hatası vermeyen versiyon)
-export const sanitize = (str: string, maxLen = 1000): string => {
+/**
+ * Güvenli Sanitize - Store içinde de kullanılabilir
+ * GitHub web editörü karakter bozulmasını önler
+ */
+const safeSanitize = (str: string, maxLen: number = 1000): string => {
   if (typeof str !== 'string') return '';
-  return str.slice(0, maxLen)
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
-    .replace(/'/g, '&#x27;');
+  const truncated = str.slice(0, maxLen);
+  let result = '';
+  for (let i = 0; i < truncated.length; i++) {
+    const ch = truncated[i];
+    const code = truncated.charCodeAt(i);
+    if (code < 32 || code === 127) continue;
+    if (ch === '&') result += '&' + 'amp;';
+    else if (ch === '<') result += '&' + 'lt;';
+    else if (ch === '>') result += '&' + 'gt;';
+    else if (ch === '"') result += '&' + 'quot;';
+    else if (ch === "'") result += '&' + '#x27;';
+    else result += ch;
+  }
+  return result;
 };
-
 // =============================================================================
 // ATOMIC TRANSACTION MANAGER
 // =============================================================================
@@ -144,9 +153,10 @@ class TransactionManager {
   private lock = false;
   private queue: (() => Promise<void>)[] = [];
 
-  async execute(callback: () => Promise<any>) {
-    return new Promise((resolve, reject) => {      const task = async () => {
-        try { resolve(await callback()); } 
+  async execute(callback: () => Promise<any>): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const task = async () => {
+        try { resolve(await callback()); }
         catch (err) { reject(err); }
       };
       if (!this.lock) {
@@ -161,6 +171,7 @@ class TransactionManager {
     });
   }
 }
+
 export const txManager = new TransactionManager();
 
 // =============================================================================
@@ -183,8 +194,7 @@ const createInitialDB = () => {
       { id: 'pkg_4', amount: 3000, price: 520, bonus: 150 },
       { id: 'pkg_5', amount: 6000, price: 1000, bonus: 400 },
       { id: 'pkg_6', amount: 15000, price: 2400, bonus: 1500 },
-      { id: 'pkg_7', amount: 30000, price: 4600, bonus: 4000 },
-    ],
+      { id: 'pkg_7', amount: 30000, price: 4600, bonus: 4000 },    ],
     users: [
       {
         id: 'u_founder', username: 'Founder', email: 'founder@tshop.com',
@@ -194,7 +204,8 @@ const createInitialDB = () => {
         referrals: { count: 0, l1: 0, l2: 0 },
         banned: false, badges: [], level: 99, xp: 0,
         vipLevel: VIP_LEVELS.MAX, vipExpiresAt: now + 365 * 86400000,
-        stats: { orders: 0, tasksCompleted: 0, reviewsWritten: 0, favorites: 0, spent: 0, earned: 0, gamesPlayed: 0, biggestWin: 0, itemsSold: 0, currentStreak: 0, longestStreak: 0, flashPurchases: 0, lastSpin: 0, lastScratch: 0 },        twoFA: true, passwordHash: '', passwordSalt: '', fingerprint: 'founder_fp',
+        stats: { orders: 0, tasksCompleted: 0, reviewsWritten: 0, favorites: 0, spent: 0, earned: 0, gamesPlayed: 0, biggestWin: 0, itemsSold: 0, currentStreak: 0, longestStreak: 0, flashPurchases: 0, lastSpin: 0, lastScratch: 0 },
+        twoFA: true, passwordHash: '', passwordSalt: '', fingerprint: 'founder_fp',
         isSeller: false, sellerInfo: null, createdAt: now - 86400000 * 30, lastLogin: now,
         notifications: { orders: true, promotions: true, tasks: true }
       },
@@ -232,8 +243,7 @@ const createInitialDB = () => {
       { id: 'p3', name: "Valorant Hesabı - Immortal", price: 1250, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/ff4655/FFF?text=Valorant", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'account', desc: "Immortal 3, 50+ skin.", tags: ['Nadir'], stock: ['VAL-IMM-001'], sales: 23, status: 'ACTIVE', deliveryTime: '10 Dk', createdAt: now - 86400000 * 30, boostUntil: 0 },
       { id: 'p4', name: "Spotify Premium 3 Ay", price: 280, category: 'cat_2', subcat: 'Spotify', image: "https://placehold.co/400x300/1DB954/FFF?text=Spotify", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "3 aylık Premium.", tags: ['Müzik'], stock: ['SP-001', 'SP-002', 'SP-003'], sales: 154, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 50, boostUntil: 0 },
       { id: 'p5', name: "Google Play 100 TL", price: 480, category: 'cat_3', subcat: 'Google Play', image: "https://placehold.co/400x300/34a853/FFF?text=Google+Play", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Google Play hediye kartı.", tags: ['Mobil'], stock: ['GP-100-A1', 'GP-100-A2'], sales: 112, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 40, boostUntil: 0 },
-      { id: 'p6', name: "Riot Points 1380 RP", price: 320, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/d13639/FFF?text=Riot+Points", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "LoL & Valorant için.", tags: ['RP'], stock: ['RP-X1', 'RP-X2'], sales: 134, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 35, boostUntil: 0 },
-      { id: 'p7', name: "Discord Nitro 1 Ay", price: 180, category: 'cat_9', subcat: 'Discord Nitro', image: "https://placehold.co/400x300/5865F2/FFF?text=Discord+Nitro", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Discord Nitro.", tags: ['Sosyal'], stock: ['NITRO-001', 'NITRO-002', 'NITRO-003'], sales: 267, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 55, boostUntil: 0 },
+      { id: 'p6', name: "Riot Points 1380 RP", price: 320, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/d13639/FFF?text=Riot+Points", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "LoL & Valorant için.", tags: ['RP'], stock: ['RP-X1', 'RP-X2'], sales: 134, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 35, boostUntil: 0 },      { id: 'p7', name: "Discord Nitro 1 Ay", price: 180, category: 'cat_9', subcat: 'Discord Nitro', image: "https://placehold.co/400x300/5865F2/FFF?text=Discord+Nitro", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Discord Nitro.", tags: ['Sosyal'], stock: ['NITRO-001', 'NITRO-002', 'NITRO-003'], sales: 267, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 55, boostUntil: 0 },
       { id: 'p8', name: "Xbox Game Pass Ultimate", price: 550, category: 'cat_1', subcat: 'Xbox', image: "https://placehold.co/400x300/107C10/FFF?text=Xbox+GamePass", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "3 aylık Ultimate.", tags: ['Oyun'], stock: ['XGPU-01', 'XGPU-02'], sales: 145, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 42, boostUntil: 0 },
       { id: 'p9', name: "Apple Gift Card 250 TL", price: 1150, category: 'cat_3', subcat: 'Apple', image: "https://placehold.co/400x300/000000/FFF?text=Apple", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "App Store, iTunes.", tags: ['Apple'], stock: ['APPLE-250-A'], sales: 56, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 28, boostUntil: 0 },
       { id: 'p10', name: "CS2 Prime Status", price: 220, category: 'cat_1', subcat: 'Steam', image: "https://placehold.co/400x300/de9b35/FFF?text=CS2", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "CS2 Prime.", tags: ['FPS'], stock: ['CSGO-P-01', 'CSGO-P-02'], sales: 292, status: 'ACTIVE', deliveryTime: 'Anında', createdAt: now - 86400000 * 65, boostUntil: 0 },
@@ -243,7 +253,8 @@ const createInitialDB = () => {
     orders: [] as any[],
     transactions: [] as any[],
     reviews: [] as any[],
-    tickets: [] as any[],    gameHistory: [] as any[],
+    tickets: [] as any[],
+    gameHistory: [] as any[],
     announcements: [
       { id: 'a1', title: 'TShop Ultimate Yayında!', content: 'Yeni özellikler: Tam admin yönetim, Telegram giriş, VIP sistem.', date: now - 3600000, priority: 'high' },
     ] as any[],
@@ -271,7 +282,7 @@ const createInitialDB = () => {
 export type DB = ReturnType<typeof createInitialDB>;
 
 // =============================================================================
-// ZUSTAND STORE (FULL LOGIC)
+// ZUSTAND STORE INTERFACE
 // =============================================================================
 interface StoreState extends DB {
   currentUserId: string | null;
@@ -279,10 +290,9 @@ interface StoreState extends DB {
   favorites: string[];
   compareList: string[];
   notifications: any[];
-  
+
   // Core Actions
-  setCurrentUser: (id: string | null) => void;
-  updateUser: (userId: string, updater: Partial<any> | ((u: any) => any)) => void;
+  setCurrentUser: (id: string | null) => void;  updateUser: (userId: string, updater: Partial<any> | ((u: any) => any)) => void;
   updatePoints: (userId: string, amount: number, reason: string, type?: 'earn' | 'spend') => void;
   updateStat: (userId: string, key: string, delta?: number) => void;
   addNotification: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
@@ -292,7 +302,8 @@ interface StoreState extends DB {
   toggleFavorite: (id: string) => void;
   toggleCompare: (id: string) => void;
   setDB: (updater: (prev: DB) => DB) => void;
-    // Business Logic
+
+  // Business Logic
   purchaseVIP: (level: string, duration: 'weekly' | 'monthly') => void;
   requestTopUp: (pkg: any, receiptData: string | null, paymentMethod: string) => void;
   approveTopUp: (topUpId: string) => void;
@@ -326,9 +337,11 @@ interface StoreState extends DB {
   addAuditLog: (action: string, details: string) => void;
 }
 
+// =============================================================================
+// ZUSTAND STORE IMPLEMENTATION
+// =============================================================================
 export const useStore = create<StoreState>()(
-  persist(
-    (set, get) => ({
+  persist(    (set, get) => ({
       ...createInitialDB(),
       currentUserId: null,
       cart: [],
@@ -337,11 +350,12 @@ export const useStore = create<StoreState>()(
       notifications: [],
 
       setCurrentUser: (id) => set({ currentUserId: id }),
-      
+
       updateUser: (userId, updater) => set((state) => ({
-        users: state.users.map(u => u.id === userId 
-          ? (typeof updater === 'function' ? updater(u) : { ...u, ...updater }) 
-          : u)      })),
+        users: state.users.map(u => u.id === userId
+          ? (typeof updater === 'function' ? updater(u) : { ...u, ...updater })
+          : u)
+      })),
 
       updatePoints: (userId, amount, reason, type = 'earn') => set((state) => {
         const user = state.users.find(u => u.id === userId);
@@ -377,7 +391,6 @@ export const useStore = create<StoreState>()(
       addNotification: (msg, type = 'success') => set((state) => ({
         notifications: [{ id: generateId(), msg, type, date: new Date().toISOString(), read: false }, ...state.notifications].slice(0, 50)
       })),
-
       addToCart: (product) => set((state) => {
         const existing = state.cart.find(i => i.id === product.id);
         if (existing) return { cart: state.cart.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i) };
@@ -385,12 +398,13 @@ export const useStore = create<StoreState>()(
       }),
 
       removeFromCart: (id) => set((state) => ({ cart: state.cart.filter(i => i.id !== id) })),
-      
+
       updateCartQty: (id, delta) => set((state) => ({
         cart: state.cart.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
       })),
 
-      toggleFavorite: (id) => set((state) => ({        favorites: state.favorites.includes(id) ? state.favorites.filter(f => f !== id) : [...state.favorites, id]
+      toggleFavorite: (id) => set((state) => ({
+        favorites: state.favorites.includes(id) ? state.favorites.filter(f => f !== id) : [...state.favorites, id]
       })),
 
       toggleCompare: (id) => set((state) => {
@@ -425,13 +439,12 @@ export const useStore = create<StoreState>()(
         if (user.points < price) {
           state.addNotification("Yetersiz bakiye!", "error");
           return;
-        }
-        state.updatePoints(user.id, price, `${VIP_BENEFITS[level as keyof typeof VIP_BENEFITS]?.name} - ${duration === 'weekly' ? 'Haftalık' : 'Aylık'}`, 'spend');
+        }        state.updatePoints(user.id, price, `${VIP_BENEFITS[level]?.name} - ${duration === 'weekly' ? 'Haftalık' : 'Aylık'}`, 'spend');
         const currentExpiry = user.vipExpiresAt && user.vipExpiresAt > Date.now() ? user.vipExpiresAt : Date.now();
         const newExpiry = currentExpiry + (days * 86400000);
         state.updateUser(user.id, { vipLevel: level, vipExpiresAt: newExpiry });
-        state.addAuditLog('VIP_PURCHASE', `${user.username} ${VIP_BENEFITS[level as keyof typeof VIP_BENEFITS]?.name} satın aldı`);
-        state.addNotification(`✓ ${VIP_BENEFITS[level as keyof typeof VIP_BENEFITS]?.name} aktif edildi!`, "success");
+        state.addAuditLog('VIP_PURCHASE', `${user.username} ${VIP_BENEFITS[level]?.name} satın aldı`);
+        state.addNotification(`${VIP_BENEFITS[level]?.name} aktif edildi!`, "success");
       },
 
       // === BAKİYE YÜKLEME TALEBİ ===
@@ -439,14 +452,15 @@ export const useStore = create<StoreState>()(
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
-        const topUpRequest = {          id: 'tu_' + generateId(), userId: user.id, username: user.username,
+        const topUpRequest = {
+          id: 'tu_' + generateId(), userId: user.id, username: user.username,
           packageId: pkg.id, amount: pkg.amount + pkg.bonus, price: pkg.price,
           paymentMethod, receiptData, status: 'PENDING', date: Date.now(),
           reviewedBy: null, reviewedAt: null,
         };
         set((s) => ({ ...s, pendingTopUps: [topUpRequest, ...s.pendingTopUps] }));
         state.addAuditLog('TOP_UP_REQUEST', `${user.username} ${pkg.amount + pkg.bonus} TS yükleme talebi oluşturdu`);
-        state.addNotification("✓ Yükleme talebi oluşturuldu. Admin onayı bekleniyor.", "info");
+        state.addNotification("Yükleme talebi oluşturuldu. Admin onayı bekleniyor.", "info");
       },
 
       approveTopUp: (topUpId) => {
@@ -455,10 +469,10 @@ export const useStore = create<StoreState>()(
         if (!user || !hasPermission(user.role, 4)) return;
         const topUp = state.pendingTopUps.find(t => t.id === topUpId);
         if (!topUp) return;
-        state.updatePoints(topUp.userId, topUp.amount, `Bakiye Yükleme (${topUp.price}₺)`, 'earn');
+        state.updatePoints(topUp.userId, topUp.amount, `Bakiye Yükleme (${topUp.price})`, 'earn');
         set((s) => ({ ...s, pendingTopUps: s.pendingTopUps.filter(t => t.id !== topUpId) }));
         state.addAuditLog('TOP_UP_APPROVE', `${topUp.username} için ${topUp.amount} TS onaylandı`);
-        state.addNotification("✓ Bakiye yüklendi", "success");
+        state.addNotification("Bakiye yüklendi", "success");
       },
 
       rejectTopUp: (topUpId, reason) => {
@@ -474,8 +488,7 @@ export const useStore = create<StoreState>()(
       requestWithdraw: (amount, method, details) => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
-        if (!user || !user.isSeller) return;
-        if (amount < state.config.minWithdraw || amount > user.sellerBalance) return;
+        if (!user || !user.isSeller) return;        if (amount < state.config.minWithdraw || amount > user.sellerBalance) return;
         const todayWithdraws = state.pendingWithdrawals.filter(w =>
           w.userId === user.id && new Date(w.date).toDateString() === new Date().toDateString()
         );
@@ -488,10 +501,11 @@ export const useStore = create<StoreState>()(
         const withdrawRequest = {
           id: 'wd_' + generateId(), userId: user.id, username: user.username,
           amount, commission, netAmount, method, details, status: 'PENDING', date: Date.now(),
-        };        state.updateUser(user.id, { sellerBalance: user.sellerBalance - amount });
+        };
+        state.updateUser(user.id, { sellerBalance: user.sellerBalance - amount });
         set((s) => ({ ...s, pendingWithdrawals: [withdrawRequest, ...s.pendingWithdrawals] }));
         state.addAuditLog('WITHDRAW_REQUEST', `${user.username} ${amount} TS çekim talebi`);
-        state.addNotification(`✓ Çekim talebi oluşturuldu. Net: ${netAmount} TS`, "info");
+        state.addNotification(`Çekim talebi oluşturuldu. Net: ${netAmount} TS`, "info");
       },
 
       approveWithdraw: (withdrawId) => {
@@ -502,7 +516,7 @@ export const useStore = create<StoreState>()(
         if (!withdraw) return;
         set((s) => ({ ...s, pendingWithdrawals: s.pendingWithdrawals.filter(w => w.id !== withdrawId) }));
         state.addAuditLog('WITHDRAW_APPROVE', `${withdraw.username} için ${withdraw.netAmount} TS onaylandı`);
-        state.addNotification("✓ Çekim onaylandı", "success");
+        state.addNotification("Çekim onaylandı", "success");
       },
 
       rejectWithdraw: (withdrawId, reason) => {
@@ -523,11 +537,10 @@ export const useStore = create<StoreState>()(
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || user.isSeller) return;
         const existingApp = state.pendingSellerApplications.find(a => a.userId === user.id && a.status === 'PENDING');
-        if (existingApp) { state.addNotification("Zaten bekleyen başvurun var", "warning"); return; }
-        const application = { id: 'sa_' + generateId(), userId: user.id, username: user.username, ...data, status: 'PENDING', date: Date.now() };
+        if (existingApp) { state.addNotification("Zaten bekleyen başvurun var", "warning"); return; }        const application = { id: 'sa_' + generateId(), userId: user.id, username: user.username, ...data, status: 'PENDING', date: Date.now() };
         set((s) => ({ ...s, pendingSellerApplications: [application, ...s.pendingSellerApplications] }));
         state.addAuditLog('SELLER_APPLICATION', `${user.username} satıcı başvurusu yaptı`);
-        state.addNotification("✓ Başvurun alındı.", "success");
+        state.addNotification("Başvurun alındı.", "success");
       },
 
       approveSellerApplication: (appId) => {
@@ -537,8 +550,9 @@ export const useStore = create<StoreState>()(
         const app = state.pendingSellerApplications.find(a => a.id === appId);
         if (!app) return;
         state.updateUser(app.userId, { isSeller: true, sellerInfo: { verifiedAt: Date.now(), totalSales: 0 } });
-        set((s) => ({ ...s, pendingSellerApplications: s.pendingSellerApplications.map(a => a.id === appId ? { ...a, status: 'APPROVED', reviewedBy: user.username, reviewedAt: Date.now() } : a) }));        state.addAuditLog('SELLER_APPROVED', `${app.username} satıcı olarak onaylandı`);
-        state.addNotification("✓ Satıcı onaylandı", "success");
+        set((s) => ({ ...s, pendingSellerApplications: s.pendingSellerApplications.map(a => a.id === appId ? { ...a, status: 'APPROVED', reviewedBy: user.username, reviewedAt: Date.now() } : a) }));
+        state.addAuditLog('SELLER_APPROVED', `${app.username} satıcı olarak onaylandı`);
+        state.addNotification("Satıcı onaylandı", "success");
       },
 
       rejectSellerApplication: (appId, reason) => {
@@ -555,7 +569,7 @@ export const useStore = create<StoreState>()(
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
-        const cleanText = sanitize(text);
+        const cleanText = safeSanitize(text);
         if (!cleanText.trim() || cleanText.length < 5) { state.addNotification("Yorum en az 5 karakter", "error"); return; }
         if (cleanText.length > state.config.maxReviewLength) { state.addNotification(`Max ${state.config.maxReviewLength} karakter`, "error"); return; }
         const hasBought = state.orders.some(o => o.userId === user.id && o.items.some(i => i.id === productId));
@@ -572,8 +586,7 @@ export const useStore = create<StoreState>()(
 
       // === GÖREV ===
       completeTask: (task) => {
-        const state = get();
-        const user = state.users.find(u => u.id === state.currentUserId);
+        const state = get();        const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
         const now = Date.now();
         const lastCompleted = state.completedTasks[task.id] || 0;
@@ -586,7 +599,8 @@ export const useStore = create<StoreState>()(
       },
 
       // === OYUNLAR ===
-      playGame: (type, betAmount, guess) => {        const state = get();
+      playGame: (type, betAmount, guess) => {
+        const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
         if (betAmount < 10 || betAmount > state.config.maxBetLimit || user.points < betAmount) {
@@ -621,23 +635,23 @@ export const useStore = create<StoreState>()(
         state.addNotification(won ? `Kazandın! +${payout} TS` : `Kaybettin. ${result}`, won ? 'success' : 'error');
       },
 
-      // === ÇARK ===
-      spinWheel: () => {
+      // === ÇARK ===      spinWheel: () => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return 0;
         const lastSpin = user.stats?.lastSpin || 0;
         if (Date.now() - lastSpin < 86400000) { state.addNotification("Çarkı günde 1 kez çevirebilirsin!", "error"); return 0; }
-        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel as keyof typeof VIP_BENEFITS] : null;
+        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel] : null;
         const rewards = vipBenefits ? vipBenefits.wheelRewards : [5, 10, 15, 20, 25, 30, 50, 100];
         const belowChance = vipBenefits ? vipBenefits.wheelBelowChance : 0.7;
         let prize;
         if (Math.random() < belowChance) {
           const threshold = user.vipLevel === VIP_LEVELS.STANDARD ? 100 : user.vipLevel === VIP_LEVELS.PRO ? 150 : 190;
-          const lowRewards = rewards.filter(r => r < threshold);
-          prize = lowRewards[Math.floor(Math.random() * lowRewards.length)] || rewards[0];        } else {
+          const lowRewards = rewards.filter((r: number) => r < threshold);
+          prize = lowRewards[Math.floor(Math.random() * lowRewards.length)] || rewards[0];
+        } else {
           const threshold = user.vipLevel === VIP_LEVELS.STANDARD ? 100 : user.vipLevel === VIP_LEVELS.PRO ? 150 : 190;
-          const highRewards = rewards.filter(r => r >= threshold);
+          const highRewards = rewards.filter((r: number) => r >= threshold);
           prize = highRewards[Math.floor(Math.random() * highRewards.length)] || rewards[rewards.length - 1];
         }
         state.updatePoints(user.id, prize, "Günlük Çark", "earn");
@@ -658,19 +672,18 @@ export const useStore = create<StoreState>()(
         const recipient = state.users.find(u => u.username.toLowerCase() === recipientUsername.toLowerCase());
         if (!recipient) return state.addNotification("Alıcı bulunamadı", "error");
         if (recipient.banned) return state.addNotification("Alıcı yasaklanmış", "error");
-        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel as keyof typeof VIP_BENEFITS] : null;
+        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel] : null;
         const taxRate = vipBenefits ? vipBenefits.transferTaxRate : state.config.transferTax;
         const tax = amount > 1000 ? Math.floor(amount * taxRate) : 0;
         const totalCost = amount + tax;
         if (user.points < totalCost) return state.addNotification("Vergi dahil yetersiz bakiye", "error");
         set((s) => {
-          const senderTx = { id: generateId(), userId: user.id, amount: totalCost, reason: `@${recipient.username} kullanıcısına gönderildi${message ? ': ' + sanitize(message) : ''}${tax > 0 ? ` (Vergi: ${tax} TS)` : ''}`, type: 'spend', date: Date.now() };
-          const recipientTx = { id: generateId(), userId: recipient.id, amount: amount, reason: `@${user.username} kullanıcısından alındı${message ? ': ' + sanitize(message) : ''}`, type: 'earn', date: Date.now() };
+          const senderTx = { id: generateId(), userId: user.id, amount: totalCost, reason: `@${recipient.username} kullanıcısına gönderildi${message ? ': ' + safeSanitize(message) : ''}${tax > 0 ? ` (Vergi: ${tax} TS)` : ''}`, type: 'spend', date: Date.now() };
+          const recipientTx = { id: generateId(), userId: recipient.id, amount: amount, reason: `@${user.username} kullanıcısından alındı${message ? ': ' + safeSanitize(message) : ''}`, type: 'earn', date: Date.now() };
           return { ...s, users: s.users.map(u => { if (u.id === user.id) return { ...u, points: u.points - totalCost }; if (u.id === recipient.id) return { ...u, points: u.points + amount }; return u; }), transactions: [senderTx, recipientTx, ...s.transactions].slice(0, 1000) };
         });
-        state.addNotification(`✓ ${amount} TS gönderildi!${tax > 0 ? ` (${tax} TS vergi)` : ''}`, "success");
+        state.addNotification(`${amount} TS gönderildi!${tax > 0 ? ` (${tax} TS vergi)` : ''}`, "success");
       },
-
       // === İADE TALEBİ ===
       requestReturn: (orderId, itemId, reason) => {
         const state = get();
@@ -684,7 +697,8 @@ export const useStore = create<StoreState>()(
         if (!order || !item) return;
         const hoursPassed = (Date.now() - order.date) / (1000 * 60 * 60);
         if (hoursPassed > state.config.returnWindowHours) { state.addNotification(`İade süresi doldu (${state.config.returnWindowHours} saat)`, "error"); return; }
-        if (state.tickets.some(t => t.orderId === orderId && t.itemId === itemId && t.status === 'OPEN')) { state.addNotification("Zaten açık talep var", "error"); return; }        const ticket = { id: generateId(), type: 'RETURN', orderId, itemId, itemName: item.name, userId: user.id, reason: sanitize(reason), status: 'OPEN', date: Date.now() };
+        if (state.tickets.some(t => t.orderId === orderId && t.itemId === itemId && t.status === 'OPEN')) { state.addNotification("Zaten açık talep var", "error"); return; }
+        const ticket = { id: generateId(), type: 'RETURN', orderId, itemId, itemName: item.name, userId: user.id, reason: safeSanitize(reason), status: 'OPEN', date: Date.now() };
         set((s) => ({ ...s, tickets: [ticket, ...s.tickets] }));
         state.addNotification("İade talebi oluşturuldu.", "info");
       },
@@ -719,8 +733,7 @@ export const useStore = create<StoreState>()(
 
       rejectReturn: (ticketId) => {
         set((s) => ({ ...s, tickets: s.tickets.map(t => t.id === ticketId ? { ...t, status: 'REJECTED' } : t) }));
-        get().addNotification("Talep reddedildi", "info");
-      },
+        get().addNotification("Talep reddedildi", "info");      },
 
       // === ÜRÜN YÖNETİMİ ===
       addProduct: (newProd) => {
@@ -731,10 +744,11 @@ export const useStore = create<StoreState>()(
         const invList = newProd.inventory.split('\n').filter((x: string) => x.trim());
         if (invList.length === 0) { state.addNotification("En az 1 stok kodu gerekli", "error"); return; }
         const prod = {
-          id: 'p_' + generateId(), name: sanitize(newProd.name).slice(0, 100),
+          id: 'p_' + generateId(), name: safeSanitize(newProd.name).slice(0, 100),
           price: Math.max(1, Number(newProd.price)), category: newProd.category, subcat: newProd.subcat || '',
-          sellerId: user.id, sellerName: user.username, image: newProd.image || "https://placehold.co/400x300/333/FFF?text=New",          sales: 0, type: 'code', tags: newProd.tags.split(',').map((t: string) => sanitize(t.trim())).filter(Boolean).slice(0, 3),
-          desc: sanitize(newProd.desc).slice(0, 500), stock: invList, verified: hasPermission(user.role, 5),
+          sellerId: user.id, sellerName: user.username, image: newProd.image || "https://placehold.co/400x300/333/FFF?text=New",
+          sales: 0, type: 'code', tags: newProd.tags.split(',').map((t: string) => safeSanitize(t.trim())).filter(Boolean).slice(0, 3),
+          desc: safeSanitize(newProd.desc).slice(0, 500), stock: invList, verified: hasPermission(user.role, 5),
           status: 'ACTIVE', deliveryTime: 'Anında', createdAt: Date.now(), boostUntil: 0,
         };
         set((s) => ({ ...s, products: [...s.products, prod] }));
@@ -755,21 +769,20 @@ export const useStore = create<StoreState>()(
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
-        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel as keyof typeof VIP_BENEFITS] : null;
+        const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel] : null;
         if (!vipBenefits) { state.addNotification("Sadece VIP üyeler ürün öne çıkarabilir", "error"); return; }
         const boostedProducts = state.products.filter(p => p.sellerId === user.id && p.boostUntil > Date.now());
         if (boostedProducts.length >= vipBenefits.boostProducts) { state.addNotification(`Boost limitin doldu`, "warning"); return; }
         const boostUntil = Date.now() + (vipBenefits.boostDays * 86400000);
         set((s) => ({ ...s, products: s.products.map(p => p.id === productId ? { ...p, boostUntil } : p) }));
-        state.addNotification(`✓ Ürün ${vipBenefits.boostDays} gün öne çıkarıldı!`, "success");
+        state.addNotification(`Ürün ${vipBenefits.boostDays} gün öne çıkarıldı!`, "success");
       },
 
       // === ADMIN USER MANAGEMENT ===
       banUser: (userId, reason = '') => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
-        if (!user || !hasPermission(user.role, 4)) return;
-        const targetUser = state.users.find(u => u.id === userId);
+        if (!user || !hasPermission(user.role, 4)) return;        const targetUser = state.users.find(u => u.id === userId);
         if (!targetUser) return;
         if (ROLE_HIERARCHY[targetUser.role] >= ROLE_HIERARCHY[user.role]) { state.addNotification("Kendinizden yüksek yetkiliyi banlayamazsın", "error"); return; }
         state.updateUser(userId, { banned: !targetUser.banned });
@@ -782,14 +795,15 @@ export const useStore = create<StoreState>()(
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
         const targetUser = state.users.find(u => u.id === userId);
-        if (!targetUser) return;        if (newRole === ROLES.FOUNDER && user.role !== ROLES.FOUNDER) { state.addNotification("Kurucu yetkisi sadece kurucu tarafından verilebilir", "error"); return; }
+        if (!targetUser) return;
+        if (newRole === ROLES.FOUNDER && user.role !== ROLES.FOUNDER) { state.addNotification("Kurucu yetkisi sadece kurucu tarafından verilebilir", "error"); return; }
         if (newRole === ROLES.SUPER_ADMIN && user.role !== ROLES.FOUNDER && user.role !== ROLES.SUPER_ADMIN) { state.addNotification("Sadece kurucu/süper admin atayabilir", "error"); return; }
         if (newRole === ROLES.ADMIN && !hasPermission(user.role, 6)) { state.addNotification("Süper admin+ yetkisi gerekli", "error"); return; }
         if (newRole === ROLES.AUTHORITY && !hasPermission(user.role, 5)) { state.addNotification("Admin+ yetkisi gerekli", "error"); return; }
         if (newRole === ROLES.MODERATOR && !hasPermission(user.role, 4)) { state.addNotification("Yetkili+ yetkisi gerekli", "error"); return; }
         state.updateUser(userId, { role: newRole });
         state.addAuditLog('ROLE_CHANGE', `${targetUser.username} rolü ${newRole} yapıldı`);
-        state.addNotification(`✓ Rol güncellendi: ${newRole}`, "success");
+        state.addNotification(`Rol güncellendi: ${newRole}`, "success");
       },
 
       // === KVKK / GDPR ===
@@ -817,8 +831,7 @@ export const useStore = create<StoreState>()(
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
-        set((s) => ({
-          ...s,
+        set((s) => ({          ...s,
           users: s.users.filter(u => u.id !== user.id),
           reviews: s.reviews.filter(r => r.userId !== user.id),
           orders: s.orders.filter(o => o.userId !== user.id),
@@ -831,9 +844,10 @@ export const useStore = create<StoreState>()(
 
       // === ADMIN CONFIG & CONTENT ===
       addAnnouncement: (title, content, priority) => {
-        const state = get();        const user = state.users.find(u => u.id === state.currentUserId);
+        const state = get();
+        const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || !hasPermission(user.role, 4)) return;
-        set((s) => ({ ...s, announcements: [{ id: 'a_' + generateId(), title: sanitize(title), content: sanitize(content), priority, date: Date.now() }, ...s.announcements] }));
+        set((s) => ({ ...s, announcements: [{ id: 'a_' + generateId(), title: safeSanitize(title), content: safeSanitize(content), priority, date: Date.now() }, ...s.announcements] }));
         state.addAuditLog('ANNOUNCEMENT_ADD', `Duyuru: ${title}`);
         state.addNotification("Duyuru eklendi", "success");
       },
@@ -844,7 +858,7 @@ export const useStore = create<StoreState>()(
         if (!user || user.role !== ROLES.FOUNDER) { state.addNotification("Sadece kurucu yapabilir", "error"); return; }
         set((s) => ({ ...s, config: { ...s.config, ...newConfig } }));
         state.addAuditLog('CONFIG_UPDATE', 'Site ayarları güncellendi');
-        state.addNotification("✓ Ayarlar kaydedildi", "success");
+        state.addNotification("Ayarlar kaydedildi", "success");
       },
 
       updateCategories: (newCategories) => {
@@ -853,7 +867,7 @@ export const useStore = create<StoreState>()(
         if (!user || !hasPermission(user.role, 5)) return;
         set((s) => ({ ...s, categories: newCategories }));
         state.addAuditLog('CATEGORIES_UPDATE', 'Kategoriler güncellendi');
-        state.addNotification("✓ Kategoriler güncellendi", "success");
+        state.addNotification("Kategoriler güncellendi", "success");
       },
 
       updateVipPrices: (newPrices) => {
@@ -862,16 +876,15 @@ export const useStore = create<StoreState>()(
         if (!user || user.role !== ROLES.FOUNDER) return;
         set((s) => ({ ...s, vipPrices: newPrices }));
         state.addAuditLog('VIP_PRICES_UPDATE', 'VIP fiyatları güncellendi');
-        state.addNotification("✓ VIP fiyatları güncellendi", "success");
+        state.addNotification("VIP fiyatları güncellendi", "success");
       },
 
       updateTopUpPackages: (newPackages) => {
-        const state = get();
-        const user = state.users.find(u => u.id === state.currentUserId);
+        const state = get();        const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || !hasPermission(user.role, 5)) return;
         set((s) => ({ ...s, topUpPackages: newPackages }));
         state.addAuditLog('PACKAGES_UPDATE', 'TS paketleri güncellendi');
-        state.addNotification("✓ Paketler güncellendi", "success");
+        state.addNotification("Paketler güncellendi", "success");
       },
     }),
     {
@@ -880,7 +893,8 @@ export const useStore = create<StoreState>()(
         users: state.users, products: state.products, orders: state.orders,
         transactions: state.transactions, reviews: state.reviews, tickets: state.tickets,
         gameHistory: state.gameHistory, announcements: state.announcements, tasks: state.tasks,
-        completedTasks: state.completedTasks, coupons: state.coupons, currentUserId: state.currentUserId,        cart: state.cart, favorites: state.favorites, compareList: state.compareList,
+        completedTasks: state.completedTasks, coupons: state.coupons, currentUserId: state.currentUserId,
+        cart: state.cart, favorites: state.favorites, compareList: state.compareList,
         config: state.config, categories: state.categories,
         vipPrices: state.vipPrices, topUpPackages: state.topUpPackages,
         pendingTopUps: state.pendingTopUps, pendingWithdrawals: state.pendingWithdrawals,
