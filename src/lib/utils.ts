@@ -47,6 +47,11 @@ export const timeAgo = (date: number | string): string => {
   }
 };
 
+/**
+ * Güvenli Sanitize Fonksiyonu
+ * GitHub web editöründe karakter bozulmasını önlemek için
+ * .replace() zinciri yerine for döngüsü kullanılmıştır.
+ */
 export const sanitize = (str: string, maxLen: number = 1000): string => {
   if (typeof str !== 'string') return '';
   const truncated = str.slice(0, maxLen);
@@ -54,12 +59,13 @@ export const sanitize = (str: string, maxLen: number = 1000): string => {
   for (let i = 0; i < truncated.length; i++) {
     const ch = truncated[i];
     const code = truncated.charCodeAt(i);
+    // Kontrol karakterlerini temizle
     if (code < 32 || code === 127) continue;
-    if (ch === '&') result += '&';
-    else if (ch === '<') result += '<';
-    else if (ch === '>') result += '>';
-    else if (ch === '"') result += '"';
-    else if (ch === "'") result += '&#x27;';
+    if (ch === '&') result += '&' + 'amp;';
+    else if (ch === '<') result += '&' + 'lt;';
+    else if (ch === '>') result += '&' + 'gt;';
+    else if (ch === '"') result += '&' + 'quot;';
+    else if (ch === "'") result += '&' + '#x27;';
     else result += ch;
   }
   return result;
