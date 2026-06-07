@@ -126,23 +126,22 @@ export const generateId = (): string => {
 };
 
 /**
- * GÜVENLİ SANITIZE - Unicode Escape Kullanımı
- * GitHub web editörü bu karakterleri ASLA bozamaz
+ * GÜVENLİ SANITIZE - CharCode Tabanlı
+ * GitHub web editörü bu kodu ASLA bozamaz
  */
 const safeSanitize = (str: string, maxLen: number = 1000): string => {
   if (typeof str !== 'string') return '';
   const truncated = str.slice(0, maxLen);
   let result = '';
   for (let i = 0; i < truncated.length; i++) {
-    const ch = truncated[i];
     const code = truncated.charCodeAt(i);
     if (code < 32 || code === 127) continue;
-    if (ch === '\u0026') result += '\u0026amp\u003B';
-    else if (ch === '\u003C') result += '\u0026lt\u003B';
-    else if (ch === '\u003E') result += '\u0026gt\u003B';
-    else if (ch === '\u0022') result += '\u0026quot\u003B';
-    else if (ch === '\u0027') result += '\u0026#x27\u003B';
-    else result += ch;
+    if (code === 38) result += String.fromCharCode(38, 97, 109, 112, 59);
+    else if (code === 60) result += String.fromCharCode(38, 108, 116, 59);
+    else if (code === 62) result += String.fromCharCode(38, 103, 116, 59);
+    else if (code === 34) result += String.fromCharCode(38, 113, 117, 111, 116, 59);
+    else if (code === 39) result += String.fromCharCode(38, 35, 120, 50, 55, 59);
+    else result += truncated[i];
   }
   return result;
 };
@@ -194,8 +193,8 @@ const createInitialDB = () => {
       { id: 'pkg_4', amount: 3000, price: 520, bonus: 150 },
       { id: 'pkg_5', amount: 6000, price: 1000, bonus: 400 },
       { id: 'pkg_6', amount: 15000, price: 2400, bonus: 1500 },
-      { id: 'pkg_7', amount: 30000, price: 4600, bonus: 4000 },    ],
-    users: [
+      { id: 'pkg_7', amount: 30000, price: 4600, bonus: 4000 },
+    ],    users: [
       {
         id: 'u_founder', username: 'Founder', email: 'founder@tshop.com',
         telegramUsername: '@founder', role: ROLES.FOUNDER,
@@ -243,8 +242,8 @@ const createInitialDB = () => {
       { id: 'p3', name: "Valorant Hesab\u0131 - Immortal", price: 1250, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/ff4655/FFF?text=Valorant", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'account', desc: "Immortal 3, 50+ skin.", tags: ['Nadir'], stock: ['VAL-IMM-001'], sales: 23, status: 'ACTIVE', deliveryTime: '10 Dk', createdAt: now - 86400000 * 30, boostUntil: 0 },
       { id: 'p4', name: "Spotify Premium 3 Ay", price: 280, category: 'cat_2', subcat: 'Spotify', image: "https://placehold.co/400x300/1DB954/FFF?text=Spotify", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "3 ayl\u0131k Premium.", tags: ['M\u00FCzik'], stock: ['SP-001', 'SP-002', 'SP-003'], sales: 154, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 50, boostUntil: 0 },
       { id: 'p5', name: "Google Play 100 TL", price: 480, category: 'cat_3', subcat: 'Google Play', image: "https://placehold.co/400x300/34a853/FFF?text=Google+Play", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Google Play hediye kart\u0131.", tags: ['Mobil'], stock: ['GP-100-A1', 'GP-100-A2'], sales: 112, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 40, boostUntil: 0 },
-      { id: 'p6', name: "Riot Points 1380 RP", price: 320, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/d13639/FFF?text=Riot+Points", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "LoL & Valorant i\u00E7in.", tags: ['RP'], stock: ['RP-X1', 'RP-X2'], sales: 134, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 35, boostUntil: 0 },      { id: 'p7', name: "Discord Nitro 1 Ay", price: 180, category: 'cat_9', subcat: 'Discord Nitro', image: "https://placehold.co/400x300/5865F2/FFF?text=Discord+Nitro", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Discord Nitro.", tags: ['Sosyal'], stock: ['NITRO-001', 'NITRO-002', 'NITRO-003'], sales: 267, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 55, boostUntil: 0 },
-      { id: 'p8', name: "Xbox Game Pass Ultimate", price: 550, category: 'cat_1', subcat: 'Xbox', image: "https://placehold.co/400x300/107C10/FFF?text=Xbox+GamePass", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "3 ayl\u0131k Ultimate.", tags: ['Oyun'], stock: ['XGPU-01', 'XGPU-02'], sales: 145, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 42, boostUntil: 0 },
+      { id: 'p6', name: "Riot Points 1380 RP", price: 320, category: 'cat_1', subcat: 'Riot Games', image: "https://placehold.co/400x300/d13639/FFF?text=Riot+Points", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "LoL & Valorant i\u00E7in.", tags: ['RP'], stock: ['RP-X1', 'RP-X2'], sales: 134, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 35, boostUntil: 0 },
+      { id: 'p7', name: "Discord Nitro 1 Ay", price: 180, category: 'cat_9', subcat: 'Discord Nitro', image: "https://placehold.co/400x300/5865F2/FFF?text=Discord+Nitro", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "Discord Nitro.", tags: ['Sosyal'], stock: ['NITRO-001', 'NITRO-002', 'NITRO-003'], sales: 267, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 55, boostUntil: 0 },      { id: 'p8', name: "Xbox Game Pass Ultimate", price: 550, category: 'cat_1', subcat: 'Xbox', image: "https://placehold.co/400x300/107C10/FFF?text=Xbox+GamePass", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "3 ayl\u0131k Ultimate.", tags: ['Oyun'], stock: ['XGPU-01', 'XGPU-02'], sales: 145, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 42, boostUntil: 0 },
       { id: 'p9', name: "Apple Gift Card 250 TL", price: 1150, category: 'cat_3', subcat: 'Apple', image: "https://placehold.co/400x300/000000/FFF?text=Apple", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'code', desc: "App Store, iTunes.", tags: ['Apple'], stock: ['APPLE-250-A'], sales: 56, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 28, boostUntil: 0 },
       { id: 'p10', name: "CS2 Prime Status", price: 220, category: 'cat_1', subcat: 'Steam', image: "https://placehold.co/400x300/de9b35/FFF?text=CS2", sellerId: 'u_seller1', sellerName: 'ProSeller', verified: true, type: 'code', desc: "CS2 Prime.", tags: ['FPS'], stock: ['CSGO-P-01', 'CSGO-P-02'], sales: 292, status: 'ACTIVE', deliveryTime: 'An\u0131nda', createdAt: now - 86400000 * 65, boostUntil: 0 },
       { id: 'p11', name: "Canva Pro 1 Y\u0131l", price: 150, category: 'cat_8', subcat: 'Canva', image: "https://placehold.co/400x300/00C4CC/FFF?text=Canva+Pro", sellerId: 'u_founder', sellerName: 'TShop Official', verified: true, type: 'account', desc: "1 y\u0131ll\u0131k Pro.", tags: ['Tasar\u0131m'], stock: ['CANVA-01@mail', 'CANVA-02@mail'], sales: 178, status: 'ACTIVE', deliveryTime: '5 Dk', createdAt: now - 86400000 * 20, boostUntil: 0 },
@@ -292,8 +291,8 @@ interface StoreState extends DB {
   notifications: any[];
 
   setCurrentUser: (id: string | null) => void;
-  updateUser: (userId: string, updater: Partial<any> | ((u: any) => any)) => void;  updatePoints: (userId: string, amount: number, reason: string, type?: 'earn' | 'spend') => void;
-  updateStat: (userId: string, key: string, delta?: number) => void;
+  updateUser: (userId: string, updater: Partial<any> | ((u: any) => any)) => void;
+  updatePoints: (userId: string, amount: number, reason: string, type?: 'earn' | 'spend') => void;  updateStat: (userId: string, key: string, delta?: number) => void;
   addNotification: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   addToCart: (product: any) => void;
   removeFromCart: (id: string) => void;
@@ -341,8 +340,8 @@ interface StoreState extends DB {
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
-      ...createInitialDB(),      currentUserId: null,
-      cart: [],
+      ...createInitialDB(),
+      currentUserId: null,      cart: [],
       favorites: [],
       compareList: [],
       notifications: [],
@@ -390,8 +389,8 @@ export const useStore = create<StoreState>()(
         notifications: [{ id: generateId(), msg, type, date: new Date().toISOString(), read: false }, ...state.notifications].slice(0, 50)
       })),
 
-      addToCart: (product) => set((state) => {        const existing = state.cart.find(i => i.id === product.id);
-        if (existing) return { cart: state.cart.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i) };
+      addToCart: (product) => set((state) => {
+        const existing = state.cart.find(i => i.id === product.id);        if (existing) return { cart: state.cart.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i) };
         return { cart: [...state.cart, { ...product, qty: 1 }] };
       }),
 
@@ -439,8 +438,8 @@ export const useStore = create<StoreState>()(
           return;
         }
         state.updatePoints(user.id, price, `${VIP_BENEFITS[level]?.name} - ${duration === 'weekly' ? 'Haftal\u0131k' : 'Ayl\u0131k'}`, 'spend');
-        const currentExpiry = user.vipExpiresAt && user.vipExpiresAt > Date.now() ? user.vipExpiresAt : Date.now();        const newExpiry = currentExpiry + (days * 86400000);
-        state.updateUser(user.id, { vipLevel: level, vipExpiresAt: newExpiry });
+        const currentExpiry = user.vipExpiresAt && user.vipExpiresAt > Date.now() ? user.vipExpiresAt : Date.now();
+        const newExpiry = currentExpiry + (days * 86400000);        state.updateUser(user.id, { vipLevel: level, vipExpiresAt: newExpiry });
         state.addAuditLog('VIP_PURCHASE', `${user.username} ${VIP_BENEFITS[level]?.name} sat\u0131n ald\u0131`);
         state.addNotification(`${VIP_BENEFITS[level]?.name} aktif edildi!`, "success");
       },
@@ -488,8 +487,8 @@ export const useStore = create<StoreState>()(
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || !user.isSeller) return;
         if (amount < state.config.minWithdraw || amount > user.sellerBalance) return;
-        const todayWithdraws = state.pendingWithdrawals.filter(w =>          w.userId === user.id && new Date(w.date).toDateString() === new Date().toDateString()
-        );
+        const todayWithdraws = state.pendingWithdrawals.filter(w =>
+          w.userId === user.id && new Date(w.date).toDateString() === new Date().toDateString()        );
         if (todayWithdraws.length >= state.config.dailyWithdrawCount) {
           state.addNotification(`G\u00FCnde max ${state.config.dailyWithdrawCount} \u00E7ekim yapabilirsin`, "warning");
           return;
@@ -537,8 +536,8 @@ export const useStore = create<StoreState>()(
         const existingApp = state.pendingSellerApplications.find(a => a.userId === user.id && a.status === 'PENDING');
         if (existingApp) { state.addNotification("Zaten bekleyen ba\u015Fvurun var", "warning"); return; }
         const application = { id: 'sa_' + generateId(), userId: user.id, username: user.username, ...data, status: 'PENDING', date: Date.now() };
-        set((s) => ({ ...s, pendingSellerApplications: [application, ...s.pendingSellerApplications] }));        state.addAuditLog('SELLER_APPLICATION', `${user.username} sat\u0131c\u0131 ba\u015Fvurusu yapt\u0131`);
-        state.addNotification("Ba\u015Fvurun al\u0131nd\u0131.", "success");
+        set((s) => ({ ...s, pendingSellerApplications: [application, ...s.pendingSellerApplications] }));
+        state.addAuditLog('SELLER_APPLICATION', `${user.username} sat\u0131c\u0131 ba\u015Fvurusu yapt\u0131`);        state.addNotification("Ba\u015Fvurun al\u0131nd\u0131.", "success");
       },
 
       approveSellerApplication: (appId) => {
@@ -586,8 +585,8 @@ export const useStore = create<StoreState>()(
       completeTask: (task) => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
-        if (!user) return;        const now = Date.now();
-        const lastCompleted = state.completedTasks[task.id] || 0;
+        if (!user) return;
+        const now = Date.now();        const lastCompleted = state.completedTasks[task.id] || 0;
         if (!task.repeatable && lastCompleted > 0) { state.addNotification("Bu g\u00F6rev zaten tamamland\u0131!", "error"); return; }
         if (task.repeatable && task.cooldown && (now - lastCompleted) < task.cooldown) { state.addNotification("Bekleme s\u00FCresinde...", "error"); return; }
         set((s) => ({ ...s, completedTasks: { ...s.completedTasks, [task.id]: now } }));
@@ -635,8 +634,8 @@ export const useStore = create<StoreState>()(
 
       // === ÇARK ===
       spinWheel: () => {
-        const state = get();        const user = state.users.find(u => u.id === state.currentUserId);
-        if (!user) return 0;
+        const state = get();
+        const user = state.users.find(u => u.id === state.currentUserId);        if (!user) return 0;
         const lastSpin = user.stats?.lastSpin || 0;
         if (Date.now() - lastSpin < 86400000) { state.addNotification("\u00C7ark\u0131 g\u00FCnde 1 kez \u00E7evirebilirsin!", "error"); return 0; }
         const vipBenefits = user.vipLevel && user.vipLevel !== VIP_LEVELS.NONE ? VIP_BENEFITS[user.vipLevel] : null;
@@ -684,8 +683,8 @@ export const useStore = create<StoreState>()(
       },
 
       // === İADE TALEBİ ===
-      requestReturn: (orderId, itemId, reason) => {        const state = get();
-        const user = state.users.find(u => u.id === state.currentUserId);
+      requestReturn: (orderId, itemId, reason) => {
+        const state = get();        const user = state.users.find(u => u.id === state.currentUserId);
         if (!user) return;
         const today = new Date().toDateString();
         const todayTickets = state.tickets.filter(t => new Date(t.date).toDateString() === today);
@@ -733,8 +732,8 @@ export const useStore = create<StoreState>()(
         set((s) => ({ ...s, tickets: s.tickets.map(t => t.id === ticketId ? { ...t, status: 'REJECTED' } : t) }));
         get().addNotification("Talep reddedildi", "info");
       },
-      // === ÜRÜN YÖNETİMİ ===
-      addProduct: (newProd) => {
+
+      // === ÜRÜN YÖNETİMİ ===      addProduct: (newProd) => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || !user.isSeller) { state.addNotification("Yetkiniz yok", "error"); return; }
@@ -782,8 +781,8 @@ export const useStore = create<StoreState>()(
         const user = state.users.find(u => u.id === state.currentUserId);
         if (!user || !hasPermission(user.role, 4)) return;
         const targetUser = state.users.find(u => u.id === userId);
-        if (!targetUser) return;        if (ROLE_HIERARCHY[targetUser.role] >= ROLE_HIERARCHY[user.role]) { state.addNotification("Kendinizden y\u00FCksek yetkiliyi banlayamazs\u0131n", "error"); return; }
-        state.updateUser(userId, { banned: !targetUser.banned });
+        if (!targetUser) return;
+        if (ROLE_HIERARCHY[targetUser.role] >= ROLE_HIERARCHY[user.role]) { state.addNotification("Kendinizden y\u00FCksek yetkiliyi banlayamazs\u0131n", "error"); return; }        state.updateUser(userId, { banned: !targetUser.banned });
         state.addAuditLog('USER_BAN_TOGGLE', `${targetUser.username} ${targetUser.banned ? 'yasa\u011F\u0131 kald\u0131r\u0131ld\u0131' : 'banland\u0131'}. Sebep: ${reason}`);
         state.addNotification(targetUser.banned ? "Yasak kald\u0131r\u0131ld\u0131" : "Kullan\u0131c\u0131 banland\u0131", "info");
       },
@@ -831,8 +830,8 @@ export const useStore = create<StoreState>()(
         if (!user) return;
         set((s) => ({
           ...s,
-          users: s.users.filter(u => u.id !== user.id),          reviews: s.reviews.filter(r => r.userId !== user.id),
-          orders: s.orders.filter(o => o.userId !== user.id),
+          users: s.users.filter(u => u.id !== user.id),
+          reviews: s.reviews.filter(r => r.userId !== user.id),          orders: s.orders.filter(o => o.userId !== user.id),
           transactions: s.transactions.filter(t => t.userId !== user.id),
           gameHistory: s.gameHistory.filter(g => g.userId !== user.id),
           currentUserId: null,
@@ -880,8 +879,8 @@ export const useStore = create<StoreState>()(
       updateTopUpPackages: (newPackages) => {
         const state = get();
         const user = state.users.find(u => u.id === state.currentUserId);
-        if (!user || !hasPermission(user.role, 5)) return;        set((s) => ({ ...s, topUpPackages: newPackages }));
-        state.addAuditLog('PACKAGES_UPDATE', 'TS paketleri g\u00FCncellendi');
+        if (!user || !hasPermission(user.role, 5)) return;
+        set((s) => ({ ...s, topUpPackages: newPackages }));        state.addAuditLog('PACKAGES_UPDATE', 'TS paketleri g\u00FCncellendi');
         state.addNotification("Paketler g\u00FCncellendi", "success");
       },
     }),
