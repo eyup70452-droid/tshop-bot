@@ -50,6 +50,7 @@ export const timeAgo = (date: number | string): string => {
 /**
  * GÜVENLİ SANITIZE - CharCode Tabanlı
  * GitHub web editörü bu kodu ASLA bozamaz
+ * & = charCode 38, < = 60, > = 62, " = 34, ' = 39
  */
 export const sanitize = (str: string, maxLen: number = 1000): string => {
   if (typeof str !== 'string') return '';
