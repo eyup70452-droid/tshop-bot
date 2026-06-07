@@ -48,25 +48,22 @@ export const timeAgo = (date: number | string): string => {
 };
 
 /**
- * Güvenli Sanitize Fonksiyonu
- * GitHub web editöründe karakter bozulmasını önlemek için
- * .replace() zinciri yerine for döngüsü kullanılmıştır.
+ * GÜVENLİ SANITIZE - CharCode Tabanlı
+ * GitHub web editörü bu kodu ASLA bozamaz
  */
 export const sanitize = (str: string, maxLen: number = 1000): string => {
   if (typeof str !== 'string') return '';
   const truncated = str.slice(0, maxLen);
   let result = '';
   for (let i = 0; i < truncated.length; i++) {
-    const ch = truncated[i];
     const code = truncated.charCodeAt(i);
-    // Kontrol karakterlerini temizle
     if (code < 32 || code === 127) continue;
-    if (ch === '&') result += '&' + 'amp;';
-    else if (ch === '<') result += '&' + 'lt;';
-    else if (ch === '>') result += '&' + 'gt;';
-    else if (ch === '"') result += '&' + 'quot;';
-    else if (ch === "'") result += '&' + '#x27;';
-    else result += ch;
+    if (code === 38) result += String.fromCharCode(38, 97, 109, 112, 59);
+    else if (code === 60) result += String.fromCharCode(38, 108, 116, 59);
+    else if (code === 62) result += String.fromCharCode(38, 103, 116, 59);
+    else if (code === 34) result += String.fromCharCode(38, 113, 117, 111, 116, 59);
+    else if (code === 39) result += String.fromCharCode(38, 35, 120, 50, 55, 59);
+    else result += truncated[i];
   }
   return result;
 };
